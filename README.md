@@ -34,7 +34,7 @@ My final approach had two main components:
 1. An **additive binomial option-pricing model**
 2. A **volatility-scaled, inventory-aware market-making model**
 
-I also tested a more active strategy that hedged with the underlying after fills. The hedge-based version was theoretically appealing, but it performed worse in the competition tests. I therefore kept the simpler inventory-aware quoting model as the final strategy.
+I also tested a more active strategy that hedged with the underlying after fills. The hedge-based version was theoretically appealing, but it performed worse in the competition tests. I therefore kept the inventory-aware quoting model as the final strategy.
 
 ---
 
@@ -42,36 +42,36 @@ I also tested a more active strategy that hedged with the underlying after fills
 
 The simulator used additive price movements rather than the multiplicative movements normally assumed by the standard Cox-Ross-Rubinstein model.
 
-For an underlying with current value \(S_0\):
+For an underlying with current value $S_0$:
 
-- an up move adds \(u\)
-- a down move subtracts \(d\)
+- an up move adds $u$
+- a down move subtracts $d$
 
-After \(n\) steps, if \(k\) of those steps are upward moves, the terminal underlying value is:
+After $n$ steps, if $k$ of those steps are upward moves, the terminal underlying value is:
 
-$$
+```math
 S_T = S_0 + ku - (n-k)d
-$$
+```
 
 ### Risk-Neutral Probability
 
 I used a zero-drift risk-neutral probability:
 
-$$
+```math
 p = \frac{d}{u+d}
-$$
+```
 
 with:
 
-$$
+```math
 q = 1-p
-$$
+```
 
 so that:
 
-$$
+```math
 pu - qd = 0
-$$
+```
 
 This gives a zero expected move under the simplified pricing model.
 
@@ -79,23 +79,23 @@ This gives a zero expected move under the simplified pricing model.
 
 For a call option:
 
-$$
+```math
 C_T = \max(S_T-K, 0)
-$$
+```
 
 For a put option:
 
-$$
+```math
 P_T = \max(K-S_T, 0)
-$$
+```
 
-where \(K\) is the strike price.
+where $K$ is the strike price.
 
 I calculated the payoff at every terminal node and then used backward induction:
 
-$$
+```math
 V_t = pV_{\text{up}} + qV_{\text{down}}
-$$
+```
 
 until reaching the present option value.
 
@@ -107,9 +107,9 @@ Because the options were European-style, the model only needed to evaluate the p
 
 The pricing model produces a theoretical midpoint:
 
-$$
+```math
 m = V_{\text{option}}
-$$
+```
 
 The next problem is deciding how far away from that midpoint to place the bid and ask.
 
@@ -121,21 +121,21 @@ My strategy therefore made the spread depend on the uncertainty remaining before
 
 I estimated the per-step variance using the underlying's upward move, downward move, and Gaussian noise:
 
-$$
+```math
 \sigma_{\text{step}}^2
 =
 pu^2 + qd^2 + \sigma_{\text{noise}}^2
-$$
+```
 
 The approximate uncertainty over the remaining lifetime of the option was:
 
-$$
+```math
 \sigma_{\text{total}}
 =
 \sqrt{n\sigma_{\text{step}}^2}
-$$
+```
 
-where \(n\) is the number of steps until expiry.
+where $n$ is the number of steps until expiry.
 
 This risk estimate becomes larger when the underlying's possible moves are larger, the noise term is larger, or more time remains until expiration.
 
@@ -145,23 +145,29 @@ This risk estimate becomes larger when the underlying's possible moves are large
 
 I centered the market around the model price and used a volatility-scaled half-spread:
 
-$$
+```math
 h_{\text{base}}
 =
 0.16\sigma_{\text{total}}
-$$
+```
 
 The initial market is therefore approximately:
 
-$$
-\text{bid} = m-h_{\text{base}}
-$$
+```math
+\text{bid}
+=
+m-h_{\text{base}}
+```
 
-$$
-\text{ask} = m+h_{\text{base}}
-$$
+```math
+\text{ask}
+=
+m+h_{\text{base}}
+```
 
-The coefficient \(0.16\) was a tunable competition parameter rather than a theoretical constant. It controls the tradeoff between execution frequency and expected profit per trade.
+The coefficient $0.16$ was a tunable competition parameter rather than a theoretical constant.
+
+It controls the tradeoff between execution frequency and expected profit per trade.
 
 ---
 
@@ -169,11 +175,11 @@ The coefficient \(0.16\) was a tunable competition parameter rather than a theor
 
 I estimated each option's delta numerically by perturbing the underlying price slightly in both directions:
 
-$$
+```math
 \Delta
 \approx
 \frac{V(S+h)-V(S-h)}{2h}
-$$
+```
 
 This finite-difference estimate provides a simple measure of how sensitive the option value is to movements in the underlying.
 
@@ -189,7 +195,7 @@ I therefore adjusted the center of the quoted market according to the current op
 
 The inventory skew was proportional to:
 
-$$
+```math
 \text{skew}
 =
 0.02
@@ -199,35 +205,35 @@ $$
 Q
 \,
 \Delta
-$$
+```
 
-where \(Q\) is the current option inventory.
+where $Q$ is the current option inventory.
 
 The effective half-spread was also widened as the absolute inventory skew increased:
 
-$$
+```math
 h
 =
 h_{\text{base}}
 +
 0.5|\text{skew}|
-$$
+```
 
 The final quote was then:
 
-$$
+```math
 \text{bid}
 =
 \max(0,\;m-h-\text{skew})
-$$
+```
 
-$$
+```math
 \text{ask}
 =
 \max(\text{bid}+\varepsilon,\;m+h-\text{skew})
-$$
+```
 
-This produces useful behavior automatically:
+This creates useful behavior automatically:
 
 - If inventory becomes too long, the quoted market shifts downward.
 - If inventory becomes too short, the quoted market shifts upward.
@@ -255,3 +261,189 @@ def on_offer_hit(...):
     update_option_position()
     estimate_exposure()
     trade_underlying_to_reduce_exposure()
+```
+
+The motivation was standard delta-risk management: if an option position creates directional exposure, an offsetting underlying position can reduce the sensitivity of total P&L to the next price move.
+
+In an idealized setting, the portfolio target would be approximately:
+
+```math
+\Delta_{\text{portfolio}}
+=
+\Delta_{\text{options}}
++
+Q_{\text{underlying}}
+\approx 0
+```
+
+A partial hedge could be expressed as:
+
+```math
+Q_{\text{hedge}}
+=
+-\lambda\Delta_{\text{options}}
+```
+
+for some hedge fraction:
+
+```math
+0 < \lambda \le 1
+```
+
+---
+
+## Why I Did Not Use the Hedge-Based Version
+
+The hedge-based implementation performed **worse in the competition tests** than the inventory-aware quoting strategy.
+
+The main issue was that active hedging introduced another source of P&L. A hedge is beneficial only if the option exposure is estimated accurately and the hedge size is appropriate. Otherwise, it can turn relatively controlled option inventory into an additional directional position in the underlying.
+
+In testing, the hedge-based version could:
+
+- react too strongly to individual fills
+- create unnecessary underlying exposure
+- increase session P&L variance
+- compound errors across repeated trades
+- increase bankruptcy risk
+
+Since the competition rewarded consistent session performance and penalized bankruptcies, this mattered more than making the strategy theoretically more sophisticated.
+
+The final version therefore used **inventory-aware quote skewing instead of automatic fill-by-fill hedging**, because that version produced better empirical test performance.
+
+One of the main lessons from the challenge was:
+
+> **A model improvement should be judged by empirical performance, not by theoretical complexity alone.**
+
+---
+
+## Final Strategy Flow
+
+```text
+Current underlying state
+        |
+        v
+Additive binomial tree
+        |
+        v
+Theoretical option value
+        |
+        v
+Estimate remaining volatility
+        |
+        v
+Estimate option delta
+        |
+        v
+Measure current inventory
+        |
+        v
+Compute spread + inventory skew
+        |
+        v
+Return bid / ask
+```
+
+---
+
+## Final Strategy Pseudocode
+
+```python
+mid = price_option(option)
+
+variance = (
+    p * up_move ** 2
+    + q * down_move ** 2
+    + noise_std ** 2
+)
+
+remaining_volatility = sqrt(
+    steps_until_expiry * variance
+)
+
+base_half_spread = 0.16 * remaining_volatility
+
+delta = (
+    price_option_at_S_plus_h
+    - price_option_at_S_minus_h
+) / (2 * h)
+
+inventory_skew = (
+    0.02
+    * remaining_volatility
+    * option_position
+    * delta
+)
+
+half_spread = (
+    base_half_spread
+    + 0.5 * abs(inventory_skew)
+)
+
+bid = max(
+    0,
+    mid - half_spread - inventory_skew
+)
+
+ask = max(
+    bid + epsilon,
+    mid + half_spread - inventory_skew
+)
+```
+
+---
+
+## Key Technical Ideas
+
+This project combines several concepts used in quantitative trading:
+
+- Discrete-time stochastic processes
+- Binomial option pricing
+- Risk-neutral valuation
+- Backward induction
+- European option payoffs
+- Finite-difference Greeks
+- Volatility estimation
+- Inventory-aware market making
+- Spread optimization
+- Experimental strategy comparison
+- Risk/reward tuning under randomized simulation
+
+The most important part of the challenge was not implementing the pricing formula itself, but translating a theoretical fair value into a quoting strategy that remained competitive across many simulated market paths.
+
+---
+
+## What I Learned
+
+**Pricing and market making are different problems.**
+
+A good estimate of fair value does not automatically produce a profitable trading strategy.
+
+**Risk management can matter more than model complexity.**
+
+A simpler strategy that survives difficult paths can outperform one that adds theoretically attractive but noisy hedging logic.
+
+**Inventory should influence price.**
+
+Continuing to quote symmetrically while accumulating exposure creates unnecessary risk.
+
+**Model changes need to be evaluated empirically.**
+
+The active hedge implementation appeared stronger in theory, but competition testing showed that the inventory-skew strategy performed better.
+
+**Simple models can be effective when they match the simulation.**
+
+The additive binomial tree closely matched the underlying dynamics and was computationally inexpensive enough to evaluate repeatedly during market making.
+
+---
+
+## Result
+
+**Top 10 Finalist — Akuna Capital Quant Trading Competition**
+
+The competition result led directly to a final-round interview for Akuna Capital's **2026 Junior Quant Developer & Strategist** position.
+
+---
+
+## Disclaimer
+
+This repository is intended as a portfolio description of my own quantitative modeling and market-making work. Competition-provided proprietary infrastructure, hidden tests, and confidential materials are not reproduced here.
