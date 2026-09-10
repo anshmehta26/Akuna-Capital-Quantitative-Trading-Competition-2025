@@ -1,5 +1,13 @@
 # Akuna Capital Quant Trading Competition — Options Market Making
 
+## Result
+
+**Top 10 Finalist — Akuna Capital Quant Trading Competition**
+
+The competition result led directly to a final-round interview for Akuna Capital's **2026 Junior Quant Developer & Strategist** position.
+
+---
+
 ## Overview
 
 This project documents my market-making strategy for Akuna Capital's quantitative trading competition. The challenge involved pricing European-style options on simulated underlyings and continuously quoting bid/ask markets against competing market makers.
@@ -433,14 +441,6 @@ The active hedge implementation appeared stronger in theory, but competition tes
 **Simple models can be effective when they match the simulation.**
 
 The additive binomial tree closely matched the underlying dynamics and was computationally inexpensive enough to evaluate repeatedly during market making.
-
----
-
-## Result
-
-**Top 10 Finalist — Akuna Capital Quant Trading Competition**
-
-The competition result led directly to a final-round interview for Akuna Capital's **2026 Junior Quant Developer & Strategist** position.
 
 ---
 
