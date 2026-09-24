@@ -8,6 +8,14 @@ The competition result led directly to a final-round interview for Akuna Capital
 
 ---
 
+## Verification
+
+Proof of results is available in this [Google Drive folder](https://drive.google.com/drive/folders/1KVhutssEUYTBR5nzS5x-9TCZ4-Jmc9Wo?usp=sharing). It contains:
+
+- A congratulatory email from an Akuna Capital recruiter for my **Top 10 worldwide** placement in the Akuna Capital 2025 Quantitative Trading Challenge 
+
+---
+
 ## Overview
 
 This project documents my market-making strategy for Akuna Capital's quantitative trading competition. The challenge involved pricing European-style options on simulated underlyings and continuously quoting bid/offer markets against competing market makers.
